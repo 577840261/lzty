@@ -9,6 +9,10 @@ let jumpPower = 0;
 let isCharging = false;
 let particles = [];
 
+// 背景粒子系统
+let backgroundParticles = [];
+let particlesContainer2, particlesContainer3;
+
 // 得分系统变量
 let consecutiveCenterJumps = 0;  // 连续中心位置跳跃次数
 let consecutivePlatformCrossings = 0;  // 连续越过平台次数
@@ -48,7 +52,8 @@ function initDOMElements() {
     finalScore = document.getElementById('finalScore');
     gameCanvas = document.getElementById('gameCanvas');
     particlesContainer = document.getElementById('particlesContainer');
-
+    particlesContainer2 = document.getElementById('particlesContainer2');
+    particlesContainer3 = document.getElementById('particlesContainer3');
     
     // 检查所有元素是否存在
     if (!startScreen || !gameOverScreen || !startButton || !restartButton || !finalScore || !gameCanvas || !particlesContainer) {
@@ -110,6 +115,9 @@ function initGame() {
     cameraOffset = { x: 0, y: 0 };
     particles = [];
     
+    // 初始化背景粒子
+    initBackgroundParticles();
+    
     // 重置得分系统变量
     consecutiveCenterJumps = 0;
     consecutivePlatformCrossings = 0;
@@ -120,7 +128,6 @@ function initGame() {
     startScreen.classList.add('hidden');
     gameOverScreen.classList.add('hidden');
     
-
     // 显示粒子背景
     showParticles();
     
@@ -128,72 +135,57 @@ function initGame() {
     requestAnimationFrame(gameLoop);
 }
 
-// 调整画布大小
-function resizeCanvas() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-}
-
-// 游戏主循环
-function gameLoop() {
-    if (!gameRunning) return;
+// 背景粒子系统 - 超简化版
+function initBackgroundParticles() {
+    const containers = [particlesContainer, particlesContainer2, particlesContainer3];
     
-    update();
-    render();
-    
-    requestAnimationFrame(gameLoop);
-}
-
-// 更新游戏状态
-function update() {
-    // 更新玩家
-    updatePlayer();
-    
-    // 更新相机
-    updateCamera();
-    
-    // 更新粒子
-    updateParticles();
-    
-    // 生成新平台
-    generatePlatforms();
-    
-    // 检查碰撞
-    checkCollisions();
-    
-    // 检查游戏结束
-    checkGameOver();
-}
-
-// 更新玩家
-function updatePlayer() {
-    // 重力
-    player.velocityY += 0.5;
-    
-    // 更新位置
-    player.x += player.velocityX;
-    player.y += player.velocityY;
-    
-    // 重置地面状态
-    player.isOnGround = false;
-}
-
-// 更新相机
-function updateCamera() {
-    // 相机跟随玩家
-    cameraOffset.x = player.x - canvas.width / 3;
-}
-
-// 更新粒子
-function updateParticles() {
-    for (let i = particles.length - 1; i >= 0; i--) {
-        particles[i].update();
+    containers.forEach((container, index) => {
+        if (!container) return;
         
-        // 移除过期粒子
-        if (particles[i].life <= 0) {
-            particles.splice(i, 1);
+        const particleCount = [12, 20, 30][index] || 10;
+        const colors = ['rgba(0, 198, 255, 0.7)', 'rgba(157, 0, 255, 0.5)', 'rgba(0, 255, 204, 0.6)'];
+        
+        for (let i = 0; i < particleCount; i++) {
+            const particle = document.createElement('div');
+            const size = Math.random() * 3 + 1;
+            
+            particle.style.position = 'absolute';
+            particle.style.width = size + 'px';
+            particle.style.height = size + 'px';
+            particle.style.backgroundColor = colors[index] || colors[0];
+            particle.style.borderRadius = '50%';
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.top = Math.random() * 100 + '%';
+            particle.style.pointerEvents = 'none';
+            particle.style.animation = `float${index + 1} ${4 + Math.random() * 3}s ease-in-out infinite`;
+            particle.style.animationDelay = Math.random() * 2 + 's';
+            
+            container.appendChild(particle);
         }
-    }
+    });
+    
+    // 添加浮动动画样式
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes float1 {
+            0%, 100% { transform: translateY(0px) translateX(0px); }
+            50% { transform: translateY(-15px) translateX(8px); }
+        }
+        @keyframes float2 {
+            0%, 100% { transform: translateY(0px) translateX(0px); }
+            50% { transform: translateY(-10px) translateX(-5px); }
+        }
+        @keyframes float3 {
+            0%, 100% { transform: translateY(0px) translateX(0px); }
+            50% { transform: translateY(-8px) translateX(3px); }
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+// 更新背景粒子 - 不再需要频繁更新
+function updateBackgroundParticles() {
+    // CSS动画会自动处理所有效果
 }
 
 // 生成新平台
@@ -516,3 +508,127 @@ setInterval(() => {
         jumpPower += 1;
     }
 }, 20);
+
+// 调整画布大小
+function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+
+// 游戏主循环
+function gameLoop() {
+    if (!gameRunning) return;
+    
+    update();
+    render();
+    
+    // 更新背景粒子
+    updateBackgroundParticles();
+    
+    requestAnimationFrame(gameLoop);
+}
+
+// 更新游戏状态
+function update() {
+    // 更新玩家
+    updatePlayer();
+    
+    // 更新相机
+    updateCamera();
+    
+    // 更新粒子
+    updateParticles();
+    
+    // 生成新平台
+    generatePlatforms();
+    
+    // 检查碰撞
+    checkCollisions();
+    
+    // 检查游戏结束
+    checkGameOver();
+}
+
+// 更新玩家
+function updatePlayer() {
+    // 重力
+    player.velocityY += 0.5;
+    
+    // 更新位置
+    player.x += player.velocityX;
+    player.y += player.velocityY;
+    
+    // 重置地面状态
+    player.isOnGround = false;
+}
+
+// 更新相机
+function updateCamera() {
+    // 相机跟随玩家
+    cameraOffset.x = player.x - canvas.width / 3;
+}
+
+// 更新粒子
+function updateParticles() {
+    for (let i = particles.length - 1; i >= 0; i--) {
+        particles[i].update();
+        
+        // 移除过期粒子
+        if (particles[i].life <= 0) {
+            particles.splice(i, 1);
+        }
+    }
+}
+
+// 背景粒子系统 - 超简化版
+function initBackgroundParticles() {
+    const containers = [particlesContainer, particlesContainer2, particlesContainer3];
+    
+    containers.forEach((container, index) => {
+        if (!container) return;
+        
+        const particleCount = [12, 20, 30][index] || 10;
+        const colors = ['rgba(0, 198, 255, 0.7)', 'rgba(157, 0, 255, 0.5)', 'rgba(0, 255, 204, 0.6)'];
+        
+        for (let i = 0; i < particleCount; i++) {
+            const particle = document.createElement('div');
+            const size = Math.random() * 3 + 1;
+            
+            particle.style.position = 'absolute';
+            particle.style.width = size + 'px';
+            particle.style.height = size + 'px';
+            particle.style.backgroundColor = colors[index] || colors[0];
+            particle.style.borderRadius = '50%';
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.top = Math.random() * 100 + '%';
+            particle.style.pointerEvents = 'none';
+            particle.style.animation = `float${index + 1} ${4 + Math.random() * 3}s ease-in-out infinite`;
+            particle.style.animationDelay = Math.random() * 2 + 's';
+            
+            container.appendChild(particle);
+        }
+    });
+    
+    // 添加浮动动画样式
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes float1 {
+            0%, 100% { transform: translateY(0px) translateX(0px); }
+            50% { transform: translateY(-15px) translateX(8px); }
+        }
+        @keyframes float2 {
+            0%, 100% { transform: translateY(0px) translateX(0px); }
+            50% { transform: translateY(-10px) translateX(-5px); }
+        }
+        @keyframes float3 {
+            0%, 100% { transform: translateY(0px) translateX(0px); }
+            50% { transform: translateY(-8px) translateX(3px); }
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+// 更新背景粒子 - 不再需要频繁更新
+function updateBackgroundParticles() {
+    // CSS动画会自动处理所有效果
+}
